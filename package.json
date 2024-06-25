@@ -1,0 +1,33 @@
+{
+  "name": "washwisee",
+  "version": "1.0.0",
+  "description": "\"# Wash_Wisee_API\"",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IsraelRobTheProgrammer/Wash_Wisee_API.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/IsraelRobTheProgrammer/Wash_Wisee_API/issues"
+  },
+  "homepage": "https://github.com/IsraelRobTheProgrammer/Wash_Wisee_API#readme",
+  "dependencies": {
+    "argon2": "^0.40.3",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "crypto-random-string": "^3.3.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.4.3",
+    "morgan": "^1.10.0",
+    "nodemailer": "^6.9.14"
+  }
+}
