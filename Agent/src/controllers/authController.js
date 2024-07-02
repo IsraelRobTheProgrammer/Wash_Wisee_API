@@ -1,8 +1,9 @@
 const Agent = require("../models/Agent");
 const argon = require("argon2");
 const randomString = require("crypto-random-string");
+const JWT = require("jsonwebtoken");
+
 const sendMail = require("../utils/mail");
-const jwt = require("jsonwebtoken");
 
 const signup = async (req, res) => {
   const { email, password } = req.body;
@@ -88,19 +89,16 @@ const signup = async (req, res) => {
     });
     const agent = await newAgent.save();
 
-    agent.verification_code = undefined;
-    agent.refresh_token = undefined;
-    agent.resetPasswordToken = undefined;
-    agent.password = undefined;
-
-    // const agentWithoutSensitiveData = await Agent.findById(
-    //   agent.id
-    // ).select("-password -verification_code -refresh_token -resetPasswordToken");
+    agent.verification_code = null;
+    agent.refresh_token = null;
+    agent.resetPasswordToken = null;
+    agent.password = null;
 
     await sendMail(from, email, subject, html);
     res.status(201).json({
       success: true,
-      message: "Account created successfully",
+      message:
+        "Account Created Successfully, Check Your Email For Verification Code",
       agent,
     });
   } catch (error) {
@@ -127,7 +125,7 @@ const login = async (req, res) => {
 
     // update the agent to add the refresh token
     const updatedAgent = await Agent.findByIdAndUpdate(
-      foundAgent.id,
+      foundAgent._id,
       {
         $push: { refresh_token: refreshToken },
       },
@@ -135,10 +133,10 @@ const login = async (req, res) => {
     );
 
     const agent = { ...updatedAgent._doc, accessToken };
-    agent.password = undefined;
-    agent.verification_code = undefined;
-    agent.refresh_token = undefined;
-    agent.resetPasswordToken = undefined;
+    agent.password = null;
+    agent.verification_code = null;
+    agent.refresh_token = null;
+    agent.resetPasswordToken = null;
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
@@ -149,7 +147,7 @@ const login = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Login successfull",
+      message: "Login successful",
       agent,
     });
   } catch (error) {
@@ -157,7 +155,196 @@ const login = async (req, res) => {
   }
 };
 
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const agent = await Agent.findOne({ email });
+    if (!agent) return res.status(404).json({ message: "Agent not found" });
+
+    const resetToken = JWT.sign(
+      { agent: agent.email },
+      process.env.PSWD_RESET_TOKEN,
+      {
+        expiresIn: "1hr",
+      }
+    );
+
+    await Agent.findByIdAndUpdate(agent._id, {
+      $set: { resetPasswordToken: resetToken },
+    });
+
+    // Create a reset password email
+    const html = `<!DOCTYPE html>
+    <html lang="en">
+    
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title> Password Reset Email </title>
+        <style>
+            body {
+                font-family: sans-serif;
+                margin: 0;
+                padding: 0;
+            }
+            .container {
+                padding: 20px;
+                max-width: 600px;
+                margin: 0 auto;
+                border-radius: 5px;
+                background-color: #332c54;
+            }
+            .header {
+                text-align: center;
+            }
+            .content {
+                padding: 20px;
+            }
+            .cta {
+                text-align: center;
+                margin-top: 20px;
+            }
+            a {
+                color: #fff2eb;
+                text-decoration: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1> You have requested a password reset for your WashWisee account. </h1>
+            </div>
+    
+            <div class="content">
+                <p>Click on the following link to reset your password within 1 hour:</p>
+                <a href="${process.env.FRONTEND_URL}/reset-password?token=${resetToken}">Reset Password</a>
+            </div>
+    
+            <div class="content">
+                <p>If you did not request a password reset, please ignore this email.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+`;
+    const subject = "WashWisee Account Password Reset";
+    const from = `WashWisee Support<${process.env.EMAIL}>`;
+
+    // Send the reset password email
+    await sendMail(from, email, subject, html);
+
+    res.status(200).json({ message: "Password reset link sent to your email" });
+  } catch (e) {
+    return res
+      .status(500)
+      .json({ message: "internal server error", error: e.message });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  const { token } = req.query;
+  const { password } = req.body;
+
+  try {
+    // Check if reset token is valid
+    let email = "";
+    if (token) {
+      JWT.verify(token, process.env.PSWD_RESET_TOKEN, (err, decoded) => {
+        if (err) throw new Error("Invalid or expired reset token");
+        email = decoded.agent;
+      });
+    }
+    console.log(email);
+    const agent = await Agent.findOne({
+      email: email,
+      resetPasswordToken: token,
+    });
+    // console.log(user, "user");
+    if (!agent)
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired reset token" });
+
+    const hashedPassword = await argon.hash(password);
+
+    // Update agent with the new password and remove reset token
+
+    await Agent.findByIdAndUpdate(agent._id, {
+      $set: { password: hashedPassword, resetPasswordToken: null },
+    });
+
+    const html = `<!DOCTYPE html>
+    <html lang="en">
+    
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title> Password Reset Successful </title>
+        <style>
+            body {
+                font-family: sans-serif;
+                margin: 0;
+                padding: 0;
+            }
+            .container {
+                padding: 20px;
+                max-width: 600px;
+                margin: 0 auto;
+                border-radius: 5px;
+                background-color: #332c54;
+            }
+            .header {
+                text-align: center;
+            }
+            .content {
+                padding: 20px;
+            }
+            .cta {
+                text-align: center;
+                margin-top: 20px;
+            }
+            a {
+                color: #fff2eb;
+                text-decoration: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1> Your password reset for your WashWisee account is successful. </h1>
+            </div>
+    
+            <div class="content">
+                <p>Hey User ${email}, Your Password reset is successful you can go ahead and login with your new password</p>
+            </div>
+        </div>
+    </body>
+    </html>
+`;
+    const subject = "WashWisee Account Password Reset";
+    const from = `WashWisee Support<${process.env.EMAIL}>`;
+
+    // Send the reset password email
+    await sendMail(from, email, subject, html);
+
+    res.status(200).json({ message: "Password reset successful" });
+  } catch (e) {
+    if (e.message === "Invalid or expired reset token") {
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired reset token" });
+    }
+    return res
+      .status(500)
+      .json({ message: "internal server error", error: e.message });
+  }
+};
+
 module.exports = {
   signup,
   login,
+  forgotPassword,
+  resetPassword,
 };

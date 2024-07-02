@@ -2,11 +2,9 @@ require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
-const app = express();
-const PORT = process.env.PORT || 5000;
-const mongoose = require("mongoose");
 const dbConnection = require("./src/utils/dbConnect");
 
+const app = express();
 // Connect to the local MongoDB instance
 dbConnection();
 
@@ -20,6 +18,7 @@ app.get("", (req, res) => {
 });
 
 app.use("/api/agents", require("./src/routes/auth"));
-app.listen(5000, () => {
+app.use("/api/agents/verify", require("./src/routes/verify"));
+app.listen(process.env.PORT || 5000, () => {
   console.log("listening on port 5000");
 });
