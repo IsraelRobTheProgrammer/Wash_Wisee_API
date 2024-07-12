@@ -1,15 +1,21 @@
 const randomString = require("crypto-random-string");
 const sendMail = require("../utils/mail");
-const Agent = require("../models/Agent");
 const { emailSchema } = require("../../joiSchema");
+const JWT = require("jsonwebtoken");
+const argon = require("argon2");
+const { conn } = require("../mongo/dbConnect");
 
 const verificationMail = async (req, res) => {
   try {
+    const agentDBConn = await conn;
+    if (agentDBConn == "ERROR")
+      return res.status(500).json("Error connecting to DB");
+    const Agent = agentDBConn.model("Agent");
+
     const { email } = req.params;
     const { error } = emailSchema.validate({ email });
     if (error)
       return res.status(400).json({ message: error.details[0].message });
-
     // Checking if the user exists
     const agent = await Agent.findOne({ email });
     if (!agent)
@@ -88,12 +94,13 @@ const verificationMail = async (req, res) => {
     const subject = "Verify your account on WashWisee!";
     const from = `WashWisee Support<${process.env.EMAIL}>`;
 
-    await Agent.findByIdAndUpdate(agent._id, {
+    await Agent.indByIdAndUpdate(agent._id, {
       $set: { verification_code: code },
     });
 
     await sendMail(from, email, subject, html);
     res.status(200).json({ message: "Verification mail has been sent" });
+    // await agentDBConn.close();
   } catch (e) {
     return res.status(500).json({ message: "internal server error", error: e });
   }
@@ -104,6 +111,10 @@ const verifyCode = async (req, res) => {
     const { code, email } = req.body;
     if (!email || !code)
       return res.status(400).json({ message: "All field is required" });
+    const agentDBConn = await conn;
+    if (agentDBConn == "ERROR")
+      return res.status(500).json("Error connecting to DB");
+    const Agent = agentDBConn.model("Agent");
 
     const agent = await Agent.findOne({ email }).select("+verification_code");
     if (!agent)
@@ -114,12 +125,9 @@ const verifyCode = async (req, res) => {
     if (agent.verification_code !== code)
       return res.status(400).json({ message: "Invalid Verification Code" });
 
-    await Agent.findByIdAndUpdate(
-      agent._id,
-      {
-        $set: { verification_code: null, isVerified: true },
-      },
-    );
+    await Agent.findByIdAndUpdate(agent._id, {
+      $set: { verification_code: null, isVerified: true },
+    });
     const html = `
     //                   <!DOCTYPE html>
     // <html lang="en">
@@ -174,10 +182,22 @@ const verifyCode = async (req, res) => {
     const subject = "Verification Successful!";
     const from = `WashWisee Support<${process.env.EMAIL}>`;
 
+    // add agent_info to cookies to use for creating business
+    const agent_info = JWT.sign(
+      { agentId: agent._id },
+      process.env.USER_INFO_TOKEN_SECRET,
+      {
+        expiresIn: "30d",
+      }
+    );
+
+    res.cookie("agent_info", agent_info, {
+      httpOnly: true,
+    });
+
     await sendMail(from, email, subject, html);
-    return res
-      .status(200)
-      .json({ message: "Agent has been verified successfully" });
+    res.status(200).json({ message: "Agent has been verified successfully" });
+    // await agentDBConn.close();
   } catch (e) {
     return res.status(500).json({ message: "internal server error", error: e });
   }
