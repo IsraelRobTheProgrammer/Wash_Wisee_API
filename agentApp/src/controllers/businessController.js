@@ -1,5 +1,5 @@
 const JWT = require("jsonwebtoken");
-const { conn } = require("../mongo/dbConnect");
+const { conn } = require("../../../dbConnect");
 
 const createBusiness = async (req, res) => {
   try {

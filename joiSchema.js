@@ -23,7 +23,7 @@ module.exports.emailSchema = Joi.object({
 });
 
 module.exports.businessSchema = Joi.object({
-  business_name: Joi.string().required().messages({
+  businessName: Joi.string().required().messages({
     "any.required": "business_name is required",
     "string.base": "business_name must be a string",
   }),
@@ -40,12 +40,12 @@ module.exports.businessSchema = Joi.object({
       "any.required": "services is required",
       "string.base": "services must be a string",
     }),
-  price_range: Joi.string()
+  priceRange: Joi.string()
     .valid(
       "Basic Laundry service - 1000 naira minimum",
       "Premium Laundry service - 2000 naira minimum",
       "Dry cleaning - Negotiable",
-      "Bedding and Linens- 500 naira minimum"
+      "Bedding and Linens - 500 naira minimum"
     )
     .required()
     .messages({

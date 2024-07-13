@@ -1,5 +1,5 @@
 const JWT = require("jsonwebtoken");
-const { conn } = require("../mongo/dbConnect");
+const { conn } = require("../../../dbConnect");
 // const Agent = agentConn.model("Agent");
 
 const agentDashBoard = async (req, res) => {

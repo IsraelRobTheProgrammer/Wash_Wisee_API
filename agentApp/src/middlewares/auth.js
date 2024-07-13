@@ -4,7 +4,7 @@ const {
   verifyCodeSchema,
   emailSchema,
   businessSchema,
-} = require("../../joiSchema");
+} = require("../../../joiSchema");
 
 const validateAuth = (req, res, next) => {
   const { error } = agentAuthSchema.validate(req.body);

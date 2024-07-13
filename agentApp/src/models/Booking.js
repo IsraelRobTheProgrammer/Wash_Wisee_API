@@ -1,5 +1,5 @@
 const { default: mongoose } = require("mongoose");
-const { conn } = require("../dbConnect");
+const { conn } = require("../../../dbConnect");
 // const JWT = require("jsonwebtoken");
 const schema = mongoose.Schema;
 
@@ -36,4 +36,4 @@ const BookingSchema = new schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Booking", BookingSchema);
+module.exports = BookingSchema;

@@ -1,10 +1,8 @@
 const argon = require("argon2");
 const randomString = require("crypto-random-string");
 const JWT = require("jsonwebtoken");
-const sendMail = require("../utils/mail");
-const { default: mongoose } = require("mongoose");
-const { conn } = require("../mongo/dbConnect");
-
+const sendMail = require("../../../utils/mail");
+const { conn } = require("../../../dbConnect");
 
 const signup = async (req, res) => {
   try {

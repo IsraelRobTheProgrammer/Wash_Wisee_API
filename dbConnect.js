@@ -1,11 +1,11 @@
 const { default: mongoose } = require("mongoose");
-const AgentSchema = require("./models/Agent");
+const AgentSchema = require("./agentApp/src/models/Agent");
 
 const dbConnection = async () => {
   try {
     let userDBConn;
     const agentDBConn = await mongoose
-      .createConnection(process.env.AGENTS_DB_URL, {
+      .createConnection(process.env.AGENT_DB_URL, {
         // maxPoolSize: 10,
         // minPoolSize: 2,
         // serverSelectionTimeoutMS: 10000,
@@ -15,7 +15,7 @@ const dbConnection = async () => {
     agentDBConn.model("Agent", AgentSchema);
 
     agentDBConn.on("connected", () => console.log("connected"));
-    agentDBConn.on("open", () => console.log("open"));
+    agentDBConn.once("open", () => console.log("open"));
     agentDBConn.on("disconnected", () => console.log("disconnected"));
     agentDBConn.on("reconnected", () => console.log("reconnected"));
     agentDBConn.on("disconnecting", () => console.log("disconnecting"));

@@ -1,9 +1,8 @@
 const randomString = require("crypto-random-string");
-const sendMail = require("../utils/mail");
-const { emailSchema } = require("../../joiSchema");
+const sendMail = require("../../../utils/mail");
+const { emailSchema } = require("../../../joiSchema");
 const JWT = require("jsonwebtoken");
-const argon = require("argon2");
-const { conn } = require("../mongo/dbConnect");
+const { conn } = require("../../../dbConnect");
 
 const verificationMail = async (req, res) => {
   try {
